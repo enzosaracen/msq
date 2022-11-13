@@ -17,7 +17,7 @@
 typedef	uint32_t uint32;
 
 /*
- *	lib.c
+ *	util.c
  */
 void	errorf(char *, ...);
 void	input(void);
@@ -27,11 +27,15 @@ void	init(void);
 /*
  *	viz.c
  */
-double	fn(double, double);
 void	drawgrid(void);
-void	msq(void);
-int	msqstep(void);
+double	mbfn(double, double, double, double);
+double	fn(double, double);
+double	lerp(double, double, double, double);
 void	msqcell(double, double);
+void	msq(void);
+void	drawcont(void);
+int	msqstep(void);
+int	meta(void);
 void	setmball(void);
 void	start(void);
 
@@ -44,5 +48,6 @@ EXTERN	int		pause;
 EXTERN	int		pauseafter;
 EXTERN	int		done;
 EXTERN	int		msdelay;
+EXTERN	int		drawfill;
 EXTERN	double		lg;
 EXTERN	double		wg;

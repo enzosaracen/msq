@@ -19,7 +19,8 @@
 
 #define MAXCONT	8192
 struct {
-	int x0, y0, x1, y1;
+	int npt;
+	int x[5], y[5];
 } cont[MAXCONT];
 int ncont;
 
@@ -64,9 +65,16 @@ double lerp(double p0, double p1, double v0, double v1)
 	return p0 + (FNEQ-v0)/(v1-v0) * (p1-p0);
 }
 
+void contadd(double x, double y)
+{
+	cont[ncont].x[cont[ncont].npt] = x;
+	cont[ncont].y[cont[ncont].npt] = y;
+	cont[ncont].npt++;
+}
+
 void msqcell(double i, double j)
 {
-	int cx0, cx1, cy0, cy1, sum, y[4], x[4], npt;
+	int cx0, cx1, cy0, cy1, sum;
 	double x0, x1, y0, y1;
 
 	cx0 = ((x0 = fn(i, j)) >= FNEQ);
@@ -76,31 +84,24 @@ void msqcell(double i, double j)
 	sum = cx0+cx1+cy0+cy1;
 	if(sum == 4 || sum == 0)
 		return;
-	pause = 1;
-	npt = 0;
-	if(cx0 != cx1) {
-		y[npt] = U(j);
-		x[npt++] = U(lerp(i, i+wg, x0, x1));
+	cont[ncont].npt = 0;
+	if(cx0 != cx1)
+		contadd(U(lerp(i, i+wg, x0, x1)), U(j));
+	if(cy0 != cy1)
+		contadd(U(lerp(i, i+wg, y0, y1)), U(j+wg));
+	if(cy0 != cx0)
+		contadd(U(i), U(lerp(j, j+wg, x0, y0)));
+	if(cy1 != cx1)
+		contadd(U(i+wg), U(lerp(j, j+wg, x1, y1)));
+	if(drawfill) {
+		/*if(!cx0)
+			contadd();
+		if(!cx1)
+			contadd();
+		if(!cy0)*/
+
 	}
-	if(cy0 != cy1) {
-		y[npt] = U(j+wg);
-		x[npt++] = U(lerp(i, i+wg, y0, y1));
-	}
-	if(cy0 != cx0) {
-		y[npt] = U(lerp(j, j+wg, x0, y0));
-		x[npt++] = U(i);
-	}
-	if(cy1 != cx1) {
-		y[npt] = U(lerp(j, j+wg, x1, y1));
-		x[npt++] = U(i+wg);
-	}
-	if(npt == 2) {
-		cont[ncont].y0 = y[0];
-		cont[ncont].x0 = x[0];
-		cont[ncont].y1 = y[1];
-		cont[ncont].x1 = x[1];
-		ncont++;
-	}
+	ncont++;
 }
 
 void msq(void)
@@ -118,7 +119,7 @@ void drawcont(void)
 	int i;
 
 	for(i = 0; i < ncont; i++)
-		SDL_RenderDrawLine(rnd, cont[i].x0, cont[i].y0, cont[i].x1, cont[i].y1);
+		SDL_RenderDrawLine(rnd, cont[i].x[0], cont[i].y[0], cont[i].x[1], cont[i].y[1]);
 }
 
 int msqstep(void)
@@ -213,7 +214,7 @@ void setmball(void)
 
 void start(void)
 {
-	drawtoggle = gridtoggle = 1;
+	drawtoggle = gridtoggle = drawfill = 1;
 	pause = pauseafter = quit = done = 0;
 	setmball();
 	loop(10, &meta);

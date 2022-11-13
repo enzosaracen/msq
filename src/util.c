@@ -33,6 +33,8 @@ void input(void)
 				quit = 1;
 			if(e.key.keysym.sym == SDLK_r)
 				setmball();
+			if(e.key.keysym.sym == SDLK_f)
+				drawfill = !drawfill;
 			if(e.key.keysym.sym == SDLK_p)
 				pauseafter = !pauseafter;
 			break;

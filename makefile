@@ -2,7 +2,7 @@ PKG = sdl2 SDL2_gfx
 CF = -Werror -ggdb `pkg-config --cflags --libs $(PKG)` -lm
 CC = gcc
 HF = src/msq.h
-OBJ = src/lib.o \
+OBJ = src/util.o \
       src/cmd.o \
       src/viz.o
 
