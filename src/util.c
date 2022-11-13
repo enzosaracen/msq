@@ -23,25 +23,63 @@ void input(void)
 			quit = 1;
 			break;
 		case SDL_KEYDOWN:
-			if(e.key.keysym.sym == SDLK_v)
+			switch(e.key.keysym.sym) {
+			case SDLK_v:
 				drawtoggle = !drawtoggle;
-			if(e.key.keysym.sym == SDLK_g)
+				break;
+			case SDLK_g:
 				gridtoggle = !gridtoggle;
-			if(e.key.keysym.sym == SDLK_SPACE)
+				break;
+			case SDLK_SPACE:
 				pause = !pause;
-			if(e.key.keysym.sym == SDLK_q)
+				break;
+			case SDLK_q:
 				quit = 1;
-			if(e.key.keysym.sym == SDLK_r)
+				break;
+			case SDLK_r:
 				setmball();
-			if(e.key.keysym.sym == SDLK_f)
+				break;
+			case SDLK_f:
 				drawfill = !drawfill;
-			if(e.key.keysym.sym == SDLK_p)
-				pauseafter = !pauseafter;
+				break;
+			case SDLK_b:
+				if(nmball < MAXMBALL-1)
+					nmball++;
+				setmball();
+				break;
+			case SDLK_n:
+				if(nmball > 0)
+					nmball--;
+				setmball();
+				break;
+			case SDLK_j:
+				if(lg > 10)
+					lg -= 10;
+				break;
+			case SDLK_k:
+				if(lg < 200)
+					lg += 10;
+				break;
+			case SDLK_w:
+				if(msdelay >= 10)
+					msdelay -= 10;
+				break;
+			case SDLK_s:
+				if(msdelay < 1000)
+					msdelay += 10;
+				break;
+			case SDLK_o:
+				fneq += 0.25;
+				break;
+			case SDLK_p:
+				fneq -= 0.25;
+				break;
+			}
 			break;
 		}
 }
 
-void loop(uint32 ms, int (*run)(void))
+void loop(int (*run)(void))
 {
 	int t, dt, err;
 
@@ -52,14 +90,14 @@ void loop(uint32 ms, int (*run)(void))
 			break;
 
 		dt = SDL_GetTicks()-t;
-		if(dt < ms) {
-			err -= ms-dt;
+		if(dt < msdelay) {
+			err -= msdelay-dt;
 			if(err < 0) {
 				SDL_Delay(-err);
 				err = 0;
 			}
-		} else if(dt > ms)
-			err += dt-ms;
+		} else if(dt > msdelay)
+			err += dt-msdelay;
 	}
 }
 

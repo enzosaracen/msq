@@ -14,21 +14,19 @@
 #define COL_G	0x00ff00ff
 #define COL_B	0x00007fff
 #define COL_Y	0x000000ff
-#define	FNEQ	0.75
 #define	BOUND	(0.2*lg*wg/2)
 
 #define MAXCONT	8192
 struct {
 	int npt;
-	int x[5], y[5];
+	Sint16 x[5], y[5];
 } cont[MAXCONT];
 int ncont;
 
-#define NMBALL 10
 struct {
 	double ha, va;
 	double cx, cy;
-} mball[NMBALL];
+} mball[MAXMBALL];
 
 void drawgrid(void)
 {
@@ -44,6 +42,14 @@ void drawgrid(void)
 	SDL_RenderDrawLine(rnd, 0, U(0), W, U(0));
 }
 
+void drawcont(void)
+{
+	int i;
+
+	for(i = 0; i < ncont; i++)
+		SDL_RenderDrawLine(rnd, cont[i].x[0], cont[i].y[0], cont[i].x[1], cont[i].y[1]);
+}
+
 double mbfn(double x, double y, double cx, double cy)
 {
 	return 1.0 / sqrt((y-cy)*(y-cy) + (x-cx)*(x-cx));
@@ -55,14 +61,14 @@ double fn(double x, double y)
 	double r;
 
 	r = 0;
-	for(i = 0; i < NMBALL; i++)
+	for(i = 0; i < nmball; i++)
 		r += mbfn(x, y, mball[i].cx, mball[i].cy);
 	return r;
 }
 
 double lerp(double p0, double p1, double v0, double v1)
 {
-	return p0 + (FNEQ-v0)/(v1-v0) * (p1-p0);
+	return p0 + (fneq-v0)/(v1-v0) * (p1-p0);
 }
 
 void contadd(double x, double y)
@@ -77,14 +83,24 @@ void msqcell(double i, double j)
 	int cx0, cx1, cy0, cy1, sum;
 	double x0, x1, y0, y1;
 
-	cx0 = ((x0 = fn(i, j)) >= FNEQ);
-	cx1 = ((x1 = fn(i+wg, j)) >= FNEQ);
-	cy0 = ((y0 = fn(i, j+wg)) >= FNEQ);
-	cy1 = ((y1 = fn(i+wg, j+wg)) >= FNEQ);
+	cx0 = ((x0 = fn(i, j)) >= fneq);
+	cx1 = ((x1 = fn(i+wg, j)) >= fneq);
+	cy0 = ((y0 = fn(i, j+wg)) >= fneq);
+	cy1 = ((y1 = fn(i+wg, j+wg)) >= fneq);
 	sum = cx0+cx1+cy0+cy1;
-	if(sum == 4 || sum == 0)
-		return;
 	cont[ncont].npt = 0;
+	if(sum == 0)
+		return;
+	if(sum == 4) {
+		if(drawfill) {
+			contadd(U(i), U(j));
+			contadd(U(i+wg), U(j));
+			contadd(U(i+wg), U(j+wg));
+			contadd(U(i), U(j+wg));
+			ncont++;
+		}
+		return;
+	}
 	if(cx0 != cx1)
 		contadd(U(lerp(i, i+wg, x0, x1)), U(j));
 	if(cy0 != cy1)
@@ -93,15 +109,8 @@ void msqcell(double i, double j)
 		contadd(U(i), U(lerp(j, j+wg, x0, y0)));
 	if(cy1 != cx1)
 		contadd(U(i+wg), U(lerp(j, j+wg, x1, y1)));
-	if(drawfill) {
-		/*if(!cx0)
-			contadd();
-		if(!cx1)
-			contadd();
-		if(!cy0)*/
-
-	}
-	ncont++;
+	if(++ncont >= MAXCONT)
+		errorf("exceeded cont limit");
 }
 
 void msq(void)
@@ -112,14 +121,6 @@ void msq(void)
 	for(j = -lg*wg/2; j < lg*wg/2; j += wg)
 		for(i = -lg*wg/2; i < lg*wg/2; i += wg)
 			msqcell(i, j);
-}
-
-void drawcont(void)
-{
-	int i;
-
-	for(i = 0; i < ncont; i++)
-		SDL_RenderDrawLine(rnd, cont[i].x[0], cont[i].y[0], cont[i].x[1], cont[i].y[1]);
 }
 
 int msqstep(void)
@@ -147,10 +148,10 @@ int msqstep(void)
 		rect.x = U(i);
 		rect.y = U(j);
 		rect.w = rect.h = UW;
-		cx0 = (fn(i, j) >= FNEQ);
-		cx1 = (fn(i+wg, j) >= FNEQ);
-		cy0 = (fn(i, j+wg) >= FNEQ);
-		cy1 = (fn(i+wg, j+wg) >= FNEQ);
+		cx0 = (fn(i, j) >= fneq);
+		cx1 = (fn(i+wg, j) >= fneq);
+		cy0 = (fn(i, j+wg) >= fneq);
+		cy1 = (fn(i+wg, j+wg) >= fneq);
 		SDL_SetRenderDrawColor(rnd, COL(COL_W));
 		SDL_RenderDrawRect(rnd, &rect);
 		filledCircleRGBA(rnd, U(i), U(j), UW/5, COL(cx0 ? COL_G : COL_R));
@@ -175,6 +176,8 @@ int meta(void)
 	int i;
 
 	input();
+	if(pause)
+		return quit;
 	msq();
 	if(drawtoggle) {
 		SDL_SetRenderDrawColor(rnd, COL(0));
@@ -186,7 +189,7 @@ int meta(void)
 		ncont = 0;
 		SDL_RenderPresent(rnd);
 	}
-	for(i = 0; i < NMBALL; i++) {
+	for(i = 0; i < nmball; i++) {
 		if(mball[i].cx+mball[i].ha >= (lg*wg/2-BOUND) || mball[i].cx+mball[i].ha <= (-lg*wg/2+BOUND))
 			mball[i].ha *= -1.0;
 		else
@@ -204,7 +207,7 @@ void setmball(void)
 {
 	int i;
 
-	for(i = 0; i < NMBALL; i++) {
+	for(i = 0; i < nmball; i++) {
 		mball[i].cx = (double)(rand()%(int)(lg*wg/2-BOUND)) * (rand()&1 ? -1 : 1);
 		mball[i].cy = (double)(rand()%(int)(lg*wg/2-BOUND)) * (rand()&1 ? -1 : 1);
 		mball[i].ha = (double)(rand()%10-5)/25.0;
@@ -214,8 +217,13 @@ void setmball(void)
 
 void start(void)
 {
-	drawtoggle = gridtoggle = drawfill = 1;
-	pause = pauseafter = quit = done = 0;
+	lg = 20;
+	wg = 0.5;
+	msdelay = 30;
+	nmball = 2;
+	fneq = 0.75;
+	drawtoggle = gridtoggle = 1;
+	pause = quit = done = drawfill = 0;
 	setmball();
-	loop(10, &meta);
+	loop(&meta);
 }

@@ -10,6 +10,8 @@
 #define H	500
 #define W	500
 
+#define MAXMBALL 20
+
 #ifndef EXTERN
 #define EXTERN extern
 #endif
@@ -21,7 +23,7 @@ typedef	uint32_t uint32;
  */
 void	errorf(char *, ...);
 void	input(void);
-void	loop(uint32, int (*)(void));
+void	loop(int (*)(void));
 void	init(void);
 
 /*
@@ -41,13 +43,14 @@ void	start(void);
 
 EXTERN	SDL_Window	*scr;
 EXTERN	SDL_Renderer	*rnd;
+EXTERN	uint32		msdelay;
 EXTERN	int		quit;
 EXTERN	int		drawtoggle;
 EXTERN	int		gridtoggle;
 EXTERN	int		pause;
-EXTERN	int		pauseafter;
 EXTERN	int		done;
-EXTERN	int		msdelay;
 EXTERN	int		drawfill;
 EXTERN	double		lg;
 EXTERN	double		wg;
+EXTERN	double		nmball;
+EXTERN	double		fneq;
